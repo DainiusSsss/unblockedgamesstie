@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { DEFAULT_GAMES } from './data/defaultGames.js';
-import { Header } from './components/Header.jsx';
-import { CategoryBar } from './components/CategoryBar.jsx';
-import { GameCard } from './components/GameCard.jsx';
-import { GamePlayer } from './components/GamePlayer.jsx';
-import { JsonModal } from './components/JsonModal.jsx';
-import { AddGameModal } from './components/AddGameModal.jsx';
+import { Header } from './components/Header.js';
+import { CategoryBar } from './components/CategoryBar.js';
+import { GameCard } from './components/GameCard.js';
+import { GamePlayer } from './components/GamePlayer.js';
+import { JsonModal } from './components/JsonModal.js';
+import { AddGameModal } from './components/AddGameModal.js';
 import { Sparkles, Shuffle, Flame, ShieldCheck, Terminal, Heart } from 'lucide-react';
 
 export default function App() {

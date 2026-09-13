@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Heart, Star, Users, Trash2 } from 'lucide-react';
-import { GameIcon } from './GameIcon.jsx';
+import { GameIcon } from './GameIcon.js';
 
 export const GameCard = ({
   game,
