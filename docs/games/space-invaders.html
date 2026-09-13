@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Retro Space Invaders</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #030712;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      width: 460px;
+      max-width: 95vw;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .hud span { color: #38bdf8; font-weight: bold; }
+    #canvas-wrap {
+      position: relative;
+      width: 460px;
+      height: 480px;
+      max-width: 95vw;
+      max-height: 80vh;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #050816;
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      gap: 12px;
+    }
+    .btn {
+      background: #38bdf8;
+      color: #082f49;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .touch-controls {
+      display: none;
+      gap: 12px;
+      margin-top: 10px;
+      width: 460px;
+      max-width: 95vw;
+      justify-content: space-between;
+    }
+    @media (max-pointer: coarse), (max-width: 520px) {
+      .touch-controls { display: flex; }
+    }
+    .t-btn {
+      padding: 12px 24px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: white;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .t-btn.fire { background: #e11d48; border-color: #f43f5e; flex: 1; margin: 0 8px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <div>SCORE: <span id="score">0</span></div>
+    <div>LIVES: <span id="lives">❤❤❤</span></div>
+    <div>WAVE: <span id="wave">1</span></div>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="game" width="460" height="480"></canvas>
+    <div id="overlay" class="overlay">
+      <h2 id="ov-title" style="color: #38bdf8; font-size: 24px;">SPACE INVADERS</h2>
+      <p style="color: #94a3b8; font-size: 13px; text-align: center;">Controls: ← → or A/D to move<br>Space or Tap to Shoot</p>
+      <button id="start-btn" class="btn">Play Game</button>
+    </div>
+  </div>
+
+  <div class="touch-controls">
+    <button class="t-btn" id="tc-left">◀</button>
+    <button class="t-btn fire" id="tc-fire">FIRE 🚀</button>
+    <button class="t-btn" id="tc-right">▶</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const waveEl = document.getElementById('wave');
+    const overlay = document.getElementById('overlay');
+    const ovTitle = document.getElementById('ov-title');
+    const startBtn = document.getElementById('start-btn');
+
+    let isRunning = false;
+    let score = 0;
+    let lives = 3;
+    let wave = 1;
+    let keys = {};
+    let bullets = [];
+    let enemyBullets = [];
+    let enemies = [];
+    let shields = [];
+    let enemyDir = 1;
+    let enemyStepDown = false;
+    let enemySpeed = 1;
+    let enemyMoveTimer = 0;
+    let lastEnemyShoot = 0;
+
+    const player = {
+      x: 215,
+      y: 440,
+      w: 30,
+      h: 18,
+      speed: 4.5,
+      cooldown: 0
+    };
+
+    function initEnemies() {
+      enemies = [];
+      const rows = 4;
+      const cols = 8;
+      const startX = 35;
+      const startY = 50;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          enemies.push({
+            x: startX + c * 48,
+            y: startY + r * 34,
+            w: 26,
+            h: 20,
+            row: r,
+            alive: true,
+            color: r === 0 ? '#f43f5e' : (r === 1 ? '#a855f7' : (r === 2 ? '#38bdf8' : '#22c55e'))
+          });
+        }
+      }
+      enemySpeed = 1 + wave * 0.25;
+    }
+
+    function initShields() {
+      shields = [];
+      const count = 4;
+      for (let i = 0; i < count; i++) {
+        const sx = 50 + i * 105;
+        for (let bx = 0; bx < 4; bx++) {
+          for (let by = 0; by < 3; by++) {
+            shields.push({
+              x: sx + bx * 9,
+              y: 380 + by * 9,
+              w: 9,
+              h: 9,
+              hp: 2
+            });
+          }
+        }
+      }
+    }
+
+    function startGame() {
+      score = 0;
+      lives = 3;
+      wave = 1;
+      bullets = [];
+      enemyBullets = [];
+      player.x = 215;
+      scoreEl.textContent = score;
+      waveEl.textContent = wave;
+      livesEl.textContent = '❤'.repeat(lives);
+      initEnemies();
+      initShields();
+      overlay.style.display = 'none';
+      isRunning = true;
+      requestAnimationFrame(loop);
+    }
+
+    function gameOver(win = false) {
+      isRunning = false;
+      ovTitle.textContent = win ? 'VICTORY!' : 'GAME OVER';
+      ovTitle.style.color = win ? '#22c55e' : '#f43f5e';
+      startBtn.textContent = 'Play Again';
+      overlay.style.display = 'flex';
+    }
+
+    function shoot() {
+      if (player.cooldown <= 0 && isRunning) {
+        bullets.push({ x: player.x + player.w / 2 - 2, y: player.y, w: 4, h: 10, speed: 7 });
+        player.cooldown = 18;
+      }
+    }
+
+    function loop() {
+      if (!isRunning) return;
+
+      // Update Player
+      if (keys['ArrowLeft'] || keys['a'] || keys['leftTouch']) player.x -= player.speed;
+      if (keys['ArrowRight'] || keys['d'] || keys['rightTouch']) player.x += player.speed;
+      player.x = Math.max(10, Math.min(canvas.width - player.w - 10, player.x));
+      if (player.cooldown > 0) player.cooldown--;
+
+      // Update bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.y -= b.speed;
+        if (b.y < 0) { bullets.splice(i, 1); continue; }
+
+        // Bullet hit shield
+        for (let s of shields) {
+          if (s.hp > 0 && b.x < s.x + s.w && b.x + b.w > s.x && b.y < s.y + s.h && b.y + b.h > s.y) {
+            s.hp--;
+            bullets.splice(i, 1);
+            break;
+          }
+        }
+
+        // Bullet hit enemy
+        for (let e of enemies) {
+          if (e.alive && b.x < e.x + e.w && b.x + b.w > e.x && b.y < e.y + e.h && b.y + b.h > e.y) {
+            e.alive = false;
+            bullets.splice(i, 1);
+            score += (4 - e.row) * 10;
+            scoreEl.textContent = score;
+            break;
+          }
+        }
+      }
+
+      // Check next wave
+      const aliveEnemies = enemies.filter(e => e.alive);
+      if (aliveEnemies.length === 0) {
+        wave++;
+        waveEl.textContent = wave;
+        initEnemies();
+        initShields();
+      }
+
+      // Enemy movement
+      let edgeReached = false;
+      for (let e of aliveEnemies) {
+        e.x += enemyDir * enemySpeed;
+        if (e.x + e.w >= canvas.width - 15 || e.x <= 15) {
+          edgeReached = true;
+        }
+        if (e.y + e.h >= player.y) {
+          return gameOver(false);
+        }
+      }
+      if (edgeReached) {
+        enemyDir = -enemyDir;
+        for (let e of aliveEnemies) {
+          e.y += 12;
+        }
+      }
+
+      // Enemy shooting
+      if (Date.now() - lastEnemyShoot > 900 && aliveEnemies.length > 0) {
+        const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+        enemyBullets.push({ x: shooter.x + shooter.w / 2, y: shooter.y + shooter.h, w: 4, h: 8, speed: 4 });
+        lastEnemyShoot = Date.now();
+      }
+
+      // Update enemy bullets
+      for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const eb = enemyBullets[i];
+        eb.y += eb.speed;
+        if (eb.y > canvas.height) { enemyBullets.splice(i, 1); continue; }
+
+        // Enemy bullet hit shield
+        for (let s of shields) {
+          if (s.hp > 0 && eb.x < s.x + s.w && eb.x + eb.w > s.x && eb.y < s.y + s.h && eb.y + eb.h > s.y) {
+            s.hp--;
+            enemyBullets.splice(i, 1);
+            break;
+          }
+        }
+
+        // Enemy bullet hit player
+        if (eb.x < player.x + player.w && eb.x + eb.w > player.x && eb.y < player.y + player.h && eb.y + eb.h > player.y) {
+          enemyBullets.splice(i, 1);
+          lives--;
+          livesEl.textContent = '❤'.repeat(Math.max(0, lives));
+          if (lives <= 0) return gameOver(false);
+        }
+      }
+
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function draw() {
+      ctx.fillStyle = '#050816';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Stars background
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(45, 80, 2, 2);
+      ctx.fillRect(160, 210, 1, 1);
+      ctx.fillRect(320, 95, 2, 2);
+      ctx.fillRect(410, 310, 2, 2);
+      ctx.fillRect(90, 360, 1, 1);
+
+      // Player cannon
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(player.x, player.y + 6, player.w, player.h - 6);
+      ctx.fillRect(player.x + player.w / 2 - 3, player.y, 6, 8);
+
+      // Shields
+      for (let s of shields) {
+        if (s.hp > 0) {
+          ctx.fillStyle = s.hp === 2 ? '#22c55e' : '#eab308';
+          ctx.fillRect(s.x, s.y, s.w, s.h);
+        }
+      }
+
+      // Enemies
+      for (let e of enemies) {
+        if (e.alive) {
+          ctx.fillStyle = e.color;
+          ctx.beginPath();
+          ctx.roundRect(e.x, e.y, e.w, e.h, 4);
+          ctx.fill();
+          // eyes
+          ctx.fillStyle = '#050816';
+          ctx.fillRect(e.x + 5, e.y + 6, 4, 4);
+          ctx.fillRect(e.x + e.w - 9, e.y + 6, 4, 4);
+        }
+      }
+
+      // Bullets
+      ctx.fillStyle = '#38bdf8';
+      for (let b of bullets) {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      }
+
+      // Enemy bullets
+      ctx.fillStyle = '#f43f5e';
+      for (let eb of enemyBullets) {
+        ctx.fillRect(eb.x, eb.y, eb.w, eb.h);
+      }
+    }
+
+    window.addEventListener('keydown', e => {
+      keys[e.key] = true;
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        shoot();
+      }
+    });
+    window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+    startBtn.addEventListener('click', startGame);
+
+    const tcLeft = document.getElementById('tc-left');
+    const tcRight = document.getElementById('tc-right');
+    const tcFire = document.getElementById('tc-fire');
+
+    tcLeft.addEventListener('pointerdown', () => { keys['leftTouch'] = true; });
+    tcLeft.addEventListener('pointerup', () => { keys['leftTouch'] = false; });
+    tcRight.addEventListener('pointerdown', () => { keys['rightTouch'] = true; });
+    tcRight.addEventListener('pointerup', () => { keys['rightTouch'] = false; });
+    tcFire.addEventListener('click', shoot);
+
+    draw();
+  </script>
+</body>
+</html>

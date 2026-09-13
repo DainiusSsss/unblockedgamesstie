@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>2048 Deluxe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 360px;
+      max-width: 95vw;
+      margin-bottom: 12px;
+    }
+    .title { font-size: 32px; font-weight: 800; color: #f59e0b; }
+    .scores { display: flex; gap: 8px; }
+    .score-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-align: center;
+      min-width: 75px;
+    }
+    .sc-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+    .sc-val { font-size: 16px; font-weight: bold; color: #fff; }
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      width: 360px;
+      max-width: 95vw;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    .btn {
+      background: #f59e0b;
+      color: #451a03;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #grid-container {
+      position: relative;
+      width: 360px;
+      height: 360px;
+      max-width: 95vw;
+      max-height: 95vw;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .cell {
+      background: #334155;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: bold;
+      transition: transform 0.1s;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      gap: 12px;
+    }
+    /* Tile colors */
+    .tile-2 { background: #e2e8f0; color: #1e293b; }
+    .tile-4 { background: #fef08a; color: #1e293b; }
+    .tile-8 { background: #fdba74; color: #fff; }
+    .tile-16 { background: #fb923c; color: #fff; }
+    .tile-32 { background: #f87171; color: #fff; }
+    .tile-64 { background: #ef4444; color: #fff; }
+    .tile-128 { background: #facc15; color: #fff; font-size: 22px; }
+    .tile-256 { background: #eab308; color: #fff; font-size: 22px; }
+    .tile-512 { background: #ca8a04; color: #fff; font-size: 22px; }
+    .tile-1024 { background: #a855f7; color: #fff; font-size: 18px; }
+    .tile-2048 { background: #ec4899; color: #fff; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">2048</div>
+    <div class="scores">
+      <div class="score-card">
+        <div class="sc-label">Score</div>
+        <div id="score" class="sc-val">0</div>
+      </div>
+      <div class="score-card">
+        <div class="sc-label">Best</div>
+        <div id="best" class="sc-val">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <span style="font-size: 12px; color: #94a3b8;">Join tiles to reach <b>2048</b>!</span>
+    <button id="new-game-btn" class="btn">New Game</button>
+  </div>
+
+  <div id="grid-container">
+    <!-- 16 cells -->
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+
+    <div id="game-over" class="overlay">
+      <h2 id="go-title" style="font-size: 24px; color: #f59e0b;">Game Over!</h2>
+      <button id="retry-btn" class="btn">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    let board = [
+      [0,0,0,0],
+      [0,0,0,0],
+      [0,0,0,0],
+      [0,0,0,0]
+    ];
+    let score = 0;
+    let best = parseInt(localStorage.getItem('2048_best') || '0');
+    document.getElementById('best').textContent = best;
+
+    const cells = document.querySelectorAll('.cell');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const gameOverEl = document.getElementById('game-over');
+
+    function initGame() {
+      board = [
+        [0,0,0,0],
+        [0,0,0,0],
+        [0,0,0,0],
+        [0,0,0,0]
+      ];
+      score = 0;
+      scoreEl.textContent = 0;
+      gameOverEl.style.display = 'none';
+      spawnTile();
+      spawnTile();
+      render();
+    }
+
+    function spawnTile() {
+      let empty = [];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) empty.push({r, c});
+        }
+      }
+      if (empty.length > 0) {
+        const spot = empty[Math.floor(Math.random() * empty.length)];
+        board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+      }
+    }
+
+    function render() {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const val = board[r][c];
+          const idx = r * 4 + c;
+          const cell = cells[idx];
+          cell.textContent = val > 0 ? val : '';
+          cell.className = 'cell' + (val > 0 ? ` tile-${val}` : '');
+        }
+      }
+      scoreEl.textContent = score;
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+        localStorage.setItem('2048_best', best);
+      }
+    }
+
+    function slide(row) {
+      let arr = row.filter(val => val !== 0);
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i] === arr[i + 1]) {
+          arr[i] *= 2;
+          score += arr[i];
+          arr.splice(i + 1, 1);
+        }
+      }
+      while (arr.length < 4) arr.push(0);
+      return arr;
+    }
+
+    function moveLeft() {
+      let changed = false;
+      for (let r = 0; r < 4; r++) {
+        const oldRow = [...board[r]];
+        board[r] = slide(board[r]);
+        if (oldRow.some((val, i) => val !== board[r][i])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveRight() {
+      let changed = false;
+      for (let r = 0; r < 4; r++) {
+        const oldRow = [...board[r]];
+        board[r] = slide(board[r].reverse()).reverse();
+        if (oldRow.some((val, i) => val !== board[r][i])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveUp() {
+      let changed = false;
+      for (let c = 0; c < 4; c++) {
+        let col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+        const oldCol = [...col];
+        col = slide(col);
+        for (let r = 0; r < 4; r++) board[r][c] = col[r];
+        if (oldCol.some((val, i) => val !== col[i])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveDown() {
+      let changed = false;
+      for (let c = 0; c < 4; c++) {
+        let col = [board[3][c], board[2][c], board[1][c], board[0][c]];
+        const oldCol = [...col];
+        col = slide(col);
+        board[3][c] = col[0];
+        board[2][c] = col[1];
+        board[1][c] = col[2];
+        board[0][c] = col[3];
+        if (oldCol.some((val, i) => val !== col[i])) changed = true;
+      }
+      return changed;
+    }
+
+    function isGameOver() {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) return false;
+          if (c < 3 && board[r][c] === board[r][c + 1]) return false;
+          if (r < 3 && board[r][c] === board[r + 1][c]) return false;
+        }
+      }
+      return true;
+    }
+
+    function handleInput(dir) {
+      let moved = false;
+      if (dir === 'left') moved = moveLeft();
+      if (dir === 'right') moved = moveRight();
+      if (dir === 'up') moved = moveUp();
+      if (dir === 'down') moved = moveDown();
+
+      if (moved) {
+        spawnTile();
+        render();
+        if (isGameOver()) {
+          gameOverEl.style.display = 'flex';
+        }
+      }
+    }
+
+    window.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); handleInput('left'); break;
+        case 'ArrowRight': case 'd': case 'D': e.preventDefault(); handleInput('right'); break;
+        case 'ArrowUp': case 'w': case 'W': e.preventDefault(); handleInput('up'); break;
+        case 'ArrowDown': case 's': case 'S': e.preventDefault(); handleInput('down'); break;
+      }
+    });
+
+    // Touch swipe handling
+    let touchStartX = 0, touchStartY = 0;
+    const grid = document.getElementById('grid-container');
+    grid.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    grid.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+        handleInput(dx > 0 ? 'right' : 'left');
+      } else if (Math.abs(dy) > 30) {
+        handleInput(dy > 0 ? 'down' : 'up');
+      }
+    }, { passive: true });
+
+    document.getElementById('new-game-btn').addEventListener('click', initGame);
+    document.getElementById('retry-btn').addEventListener('click', initGame);
+
+    initGame();
+  </script>
+</body>
+</html>
