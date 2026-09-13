@@ -27,11 +27,20 @@ export const GamePlayer = ({
   const [copied, setCopied] = useState(false);
   const playerRef = useRef(null);
 
-  // Parse iframe src from game.iframe string if iframeSrc is not provided
+  // Parse iframe src from game.iframe string if iframeSrc is not provided and adapt base path
   const getIframeSrc = () => {
-    if (game.iframeSrc) return game.iframeSrc;
-    const match = game.iframe.match(/src=["']([^"']+)["']/i);
-    return match ? match[1] : '';
+    let src = game.iframeSrc;
+    if (!src && game.iframe) {
+      const match = game.iframe.match(/src=["']([^"']+)["']/i);
+      src = match ? match[1] : '';
+    }
+    if (!src) return '';
+    // If it's a local absolute path like /games/snake.html, resolve with BASE_URL
+    if (src.startsWith('/') && !src.startsWith('//')) {
+      const base = (import.meta.env.BASE_URL || './').replace(/\/$/, '');
+      return `${base}/${src.replace(/^\//, '')}`;
+    }
+    return src;
   };
 
   const iframeSrc = getIframeSrc();

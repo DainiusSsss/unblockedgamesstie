@@ -29,7 +29,9 @@ export default function App() {
   useEffect(() => {
     async function loadGames() {
       try {
-        const res = await fetch('/games.json');
+        const basePath = import.meta.env.BASE_URL || './';
+        const jsonUrl = `${basePath.replace(/\/$/, '')}/games.json`;
+        const res = await fetch(jsonUrl);
         if (res.ok) {
           const jsonGames = await res.json();
           // Load custom games from localStorage
