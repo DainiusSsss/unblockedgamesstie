@@ -14,7 +14,22 @@ import {
   ExternalLink,
   Flame,
   Trophy,
-  Play
+  Play,
+  Car,
+  Box,
+  Video,
+  Smartphone,
+  Compass,
+  Coffee,
+  Globe,
+  Music,
+  Camera,
+  Bot,
+  Shield,
+  Tv,
+  Film,
+  Volume2,
+  Target
 } from 'lucide-react';
 
 export const GameIcon = ({ name, className = "w-6 h-6" }) => {
@@ -41,12 +56,42 @@ export const GameIcon = ({ name, className = "w-6 h-6" }) => {
       return <Bomb className={className} />;
     case 'Crosshair':
       return <Crosshair className={className} />;
+    case 'Target':
+      return <Target className={className} />;
     case 'ExternalLink':
       return <ExternalLink className={className} />;
     case 'Flame':
       return <Flame className={className} />;
     case 'Trophy':
       return <Trophy className={className} />;
+    case 'Car':
+      return <Car className={className} />;
+    case 'Box':
+      return <Box className={className} />;
+    case 'Video':
+      return <Video className={className} />;
+    case 'Music':
+      return <Music className={className} />;
+    case 'Camera':
+      return <Camera className={className} />;
+    case 'Bot':
+      return <Bot className={className} />;
+    case 'Shield':
+      return <Shield className={className} />;
+    case 'Tv':
+      return <Tv className={className} />;
+    case 'Film':
+      return <Film className={className} />;
+    case 'Volume2':
+      return <Volume2 className={className} />;
+    case 'Smartphone':
+      return <Smartphone className={className} />;
+    case 'Compass':
+      return <Compass className={className} />;
+    case 'Coffee':
+      return <Coffee className={className} />;
+    case 'Globe':
+      return <Globe className={className} />;
     default:
       return <Play className={className} />;
   }

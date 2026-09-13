@@ -1,6 +1,6 @@
 {
   "name": "Unblocked Games",
-  "description": "A fast and clean unblocked games portal with playable iframe games stored in a JSON database.",
+  "description": "A fast and clean unblocked games and apps portal with playable iframe games and web apps stored in a JSON database.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

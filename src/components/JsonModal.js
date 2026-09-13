@@ -1,18 +1,23 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Download, RotateCcw, FileJson } from 'lucide-react';
+import { X, Copy, Check, Download, RotateCcw, FileJson, Gamepad2, Smartphone } from 'lucide-react';
 
 export const JsonModal = ({
-  games,
+  games = [],
+  apps = [],
+  defaultDataset = 'games',
   isOpen,
   onClose,
   onResetDefaults,
 }) => {
+  const [selectedDataset, setSelectedDataset] = useState(defaultDataset);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('raw');
 
   if (!isOpen) return null;
 
-  const jsonString = JSON.stringify(games, null, 2);
+  const currentList = selectedDataset === 'apps' ? apps : games;
+  const currentFileName = selectedDataset === 'apps' ? 'apps.json' : 'games.json';
+  const jsonString = JSON.stringify(currentList, null, 2);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonString);
@@ -25,7 +30,7 @@ export const JsonModal = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'games.json';
+    a.download = currentFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -36,18 +41,54 @@ export const JsonModal = ({
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
               <FileJson className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-100 text-base sm:text-lg">games.json Database</h2>
-              <p className="text-xs text-slate-400">All games with embedded &lt;iframe&gt; records</p>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-slate-100 text-base sm:text-lg">
+                  {currentFileName} Database
+                </h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                  {currentList.length} records
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                JSON stored iframe embed records
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Dataset switch: games.json vs apps.json */}
+            <div className="bg-slate-950 p-1 rounded-xl flex items-center gap-1 border border-slate-800">
+              <button
+                onClick={() => setSelectedDataset('games')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  selectedDataset === 'games'
+                    ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Gamepad2 className="w-3.5 h-3.5" />
+                <span>games.json</span>
+              </button>
+              <button
+                onClick={() => setSelectedDataset('apps')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  selectedDataset === 'apps'
+                    ? 'bg-pink-500 text-slate-950 font-bold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>apps.json</span>
+              </button>
+            </div>
+
+            {/* View tab switch */}
             <div className="bg-slate-800 p-1 rounded-xl flex items-center gap-1 border border-slate-700">
               <button
                 onClick={() => setActiveTab('raw')}
@@ -63,7 +104,7 @@ export const JsonModal = ({
                   activeTab === 'parsed' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Iframe List ({games.length})
+                Iframe List ({currentList.length})
               </button>
             </div>
 
@@ -86,19 +127,24 @@ export const JsonModal = ({
             </div>
           ) : (
             <div className="space-y-3">
-              {games.map((g, idx) => (
-                <div key={g.id || idx} className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+              {currentList.map((item, idx) => (
+                <div key={item.id || idx} className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-slate-100">{g.title}</span>
+                      <span className="font-bold text-sm text-slate-100">{item.title}</span>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                        {g.category}
+                        {item.category}
                       </span>
+                      {item.isApp && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-pink-950 text-pink-400 border border-pink-800/60">
+                          App
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[11px] font-mono text-slate-500">ID: {g.id}</span>
+                    <span className="text-[11px] font-mono text-slate-500">ID: {item.id}</span>
                   </div>
                   <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-xs font-mono text-amber-300/90 overflow-x-auto">
-                    {g.iframe}
+                    {item.iframe}
                   </div>
                 </div>
               ))}
@@ -114,7 +160,7 @@ export const JsonModal = ({
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
-              <span>{copied ? 'Copied to Clipboard!' : 'Copy JSON'}</span>
+              <span>{copied ? 'Copied to Clipboard!' : `Copy ${currentFileName}`}</span>
             </button>
 
             <button
@@ -122,7 +168,7 @@ export const JsonModal = ({
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md shadow-cyan-600/20 transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span>Download games.json</span>
+              <span>Download {currentFileName}</span>
             </button>
           </div>
 
@@ -131,7 +177,7 @@ export const JsonModal = ({
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 text-xs font-semibold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset to Defaults</span>
+            <span>Reset Database to Defaults</span>
           </button>
         </div>
       </div>
