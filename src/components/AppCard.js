@@ -85,21 +85,8 @@ export const AppCard = ({
           <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <div className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/30 scale-90 group-hover:scale-100 transition-transform">
               <Play className="w-3.5 h-3.5 fill-slate-950" />
-              <span>Open in Iframe</span>
+              <span>Launch App</span>
             </div>
-
-            {app.iframeSrc && (
-              <a
-                href={app.webUrl || app.iframeSrc}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs shadow-md"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
           </div>
         </div>
 

@@ -312,19 +312,8 @@ export default function App() {
                   onClick={() => setSelectedItem(featuredApp)}
                   className="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-400 text-slate-950 font-bold text-sm shadow-lg shadow-pink-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
                 >
-                  <Play className="w-4 h-4 fill-slate-950" /> Launch {featuredApp.title} in Iframe
+                  <Play className="w-4 h-4 fill-slate-950" /> Launch {featuredApp.title}
                 </button>
-
-                {featuredApp.iframeSrc && (
-                  <a
-                    href={featuredApp.iframeSrc}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-colors flex items-center gap-2"
-                  >
-                    <ExternalLink className="w-4 h-4 text-pink-400" /> Open in New Tab
-                  </a>
-                )}
               </div>
             </div>
 

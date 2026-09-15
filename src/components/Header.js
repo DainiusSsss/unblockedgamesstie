@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gamepad2, Search, FileJson, Plus, Sparkles, X, Smartphone } from 'lucide-react';
+import { Gamepad2, Search, FileJson, Sparkles, X, Smartphone } from 'lucide-react';
 
 export const Header = ({
   activeSection = 'games',
@@ -7,7 +7,6 @@ export const Header = ({
   searchQuery,
   setSearchQuery,
   onOpenJsonModal,
-  onOpenAddModal,
   gamesCount = 0,
   appsCount = 0,
 }) => {
@@ -97,20 +96,7 @@ export const Header = ({
             title="Inspect & Edit JSON Data"
           >
             <FileJson className="w-4 h-4 text-amber-400" />
-            <span className="hidden lg:inline">JSON Data</span>
-          </button>
-
-          <button
-            onClick={onOpenAddModal}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-white text-xs font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] ${
-              activeSection === 'apps'
-                ? 'bg-pink-600 hover:bg-pink-500 shadow-pink-600/20'
-                : 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/20'
-            }`}
-            title={activeSection === 'apps' ? "Add a custom web app iframe" : "Add a custom game with iframe"}
-          >
-            <Plus className="w-4 h-4" />
-            <span>{activeSection === 'apps' ? 'Add App' : 'Add Game'}</span>
+            <span className="hidden sm:inline">JSON Data</span>
           </button>
         </div>
       </div>
